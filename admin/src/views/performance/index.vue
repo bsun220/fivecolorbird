@@ -139,9 +139,10 @@
         <!-- 详情抽屉 -->
         <el-drawer
             v-model="infoDrawerVisible"
-            title="详情"
-            :size="'45%'"
+            title="绩效详情"
+            size="860px"
             :destroy-on-close="true"
+            custom-class="performance-info-drawer"
             @closed="handleInfoDrawerClosed"
         >
             <info-popup
@@ -149,6 +150,8 @@
                 ref="infoRef"
                 :dict-data="dictData"
                 :row-id = "currentRowId"
+                @close="infoDrawerVisible = false"
+                @edit="handleInfoEdit"
             />
         </el-drawer>
     </div>
@@ -261,8 +264,12 @@ const handleInfo = (row: any) => {
     infoDrawerVisible.value = true
 }
 
+const handleInfoEdit = async (data: any) => {
+    infoDrawerVisible.value = false
+    await handleEdit(data)
+}
+
 
 
 getLists()
 </script>
-

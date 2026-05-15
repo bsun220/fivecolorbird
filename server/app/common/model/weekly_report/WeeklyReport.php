@@ -17,7 +17,6 @@ namespace app\common\model\weekly_report;
 
 use app\common\model\auth\Admin;
 use app\common\model\BaseModel;
-use app\common\model\user\User;
 use think\model\concern\SoftDelete;
 
 
@@ -32,6 +31,9 @@ class WeeklyReport extends BaseModel
     protected $name = 'weekly_report';
     protected $deleteTime = 'delete_time';
 
+    // JSON字段
+    protected $json = ['daily_details'];
+    protected $jsonAssoc = true;
 
     public function userInfo()
     {

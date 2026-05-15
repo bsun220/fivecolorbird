@@ -1,129 +1,106 @@
-<style scoped>
-
-table {
-    width: 100%;
-    border-collapse: collapse; /* 合并边框 */
-}
-
-th, td {
-    border: 1px solid #ddd; /* 单元格边框 */
-    padding: 8px; /* 内边距 */
-    text-align: left; /* 文本对齐方式 */
-}
-
-th {
-    background-color: #f2f2f2; /* 表头背景色 */
-
-}
-.c1 {
-    background-color: #F0F5FF;
-    text-align: right;
-    padding-right: 20px;
-}
-.c2 {
-    text-align: left;
-    padding-left: 20px;
-}
-
-.title {border-left: 4px solid #045dff; padding-left: 8px;}
-
-/* 防止标签换行 */
-:deep(.no-wrap-label .el-form-item__label) {
-    white-space: nowrap;
-    min-width: 90px;
-}
-</style>
 <template>
-<!--    <div class="font-medium mb-7 title">基础信息</div>-->
-    <table>
-        <tbody>
-        <tr>
-            <td class="c1" style="width: 50%"><b>{{formData.node}}&nbsp;&nbsp;&nbsp;&nbsp;{{formData.userInfo.name}}</b></td>
-            <td class="c2" style="width: 50%">{{formData.userInfo.number}}&nbsp;&nbsp;&nbsp;&nbsp;{{formData.userInfo.jobs_name}}&nbsp;&nbsp;&nbsp;&nbsp;{{formData.userInfo.dept_name}}</td>
-        </tr>
-        </tbody>
-    </table>
-    <div class="font-medium mb-7"></div>
-    <div class="font-medium mb-7 title">工时统计</div>
-    <table>
-        <tbody>
-            <tr>
-                <td class="c1" style="width: 20%">本周预计工时</td>
-                <td class="c2" style="width: 30%">{{formData.working_hours}}</td>
-                <td class="c1" style="width: 20%">实际工时</td>
-                <td class="c2" style="width: 30%">{{formData.actual_hours}}</td>
-            </tr>
-            <tr>
-                <td class="c1" style="width: 20%">未完成工时</td>
-                <td class="c2" style="width: 30%">{{formData.unfinished_work_hours}}</td>
-                <td class="c1" style="width: 20%">加班工时</td>
-                <td class="c2" style="width: 30%">{{formData.overtime_hours}}</td>
-            </tr>
-        </tbody>
-    </table>
-    <div class="font-medium mb-7"></div>
-    <div class="font-medium mb-7 title">审批回复</div>
-    <table>
-        <tbody>
-        <tr>
-            <td class="c1" style="width: 20%">审批回复</td>
-            <td class="c2 col-span-3" colspan="3" >{{formData.remarks}}</td>
-        </tr>
-        </tbody>
-    </table>
+    <div v-loading="loading" class="report-info">
+        <weekly-report-detail :data="formData" show-all-days>
+            <template #after>
+                <div class="section-title">
+                    <span></span>
+                    审批回复
+                </div>
+                <table class="reply-table">
+                    <tbody>
+                        <tr>
+                            <td class="reply-label">审批回复</td>
+                            <td>{{ formData.reply || '暂无回复' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+        </weekly-report-detail>
+    </div>
 </template>
 
 <script lang="ts" setup>
-import type { FormInstance } from 'element-plus'
-
 import type { PropType } from 'vue'
-import {onMounted, ref, watch} from "vue";
+import { onMounted, reactive, ref } from 'vue'
 import { apiWeeklyReportDetail } from '@/api/weekly_report'
+import WeeklyReportDetail from '@/views/weekly_report/components/weekly-report-detail.vue'
 
 const props = defineProps({
-    data: {
-        type: Object as PropType<Record<string, any>>,
-        default: () => ({})
-    },
     rowId: {
-        type: Number as PropType<Record<string, any>>,
-        default: () => ({})
-    },
+        type: Number as PropType<number>,
+        default: () => null
+    }
 })
 
-const formRef = ref<FormInstance>()
+const loading = ref(false)
 const formData = reactive({
     id: '',
-    userInfo: [],
-    node: '',
-    working_hours: 0,
-    actual_hours: 0,
-    unfinished_work_hours: 0,
+    start_date: '',
+    end_date: '',
+    userInfo: {} as Record<string, any>,
+    status: 0,
+    daily_details: [] as any[],
+    total_hours: 0,
     overtime_hours: 0,
-    remarks: '',
+    todo_items: '',
+    reply: ''
 })
 
-
-
-const loading = async () => {
-    const data = await apiWeeklyReportDetail({
-        id: props.rowId
-    })
-    // 正确遍历对象并赋值到formData
-    Object.keys(data).forEach(key => {
-        formData[key] = data[key];
-    });
-
+const loadDetail = async () => {
+    if (!props.rowId) return
+    loading.value = true
+    try {
+        const data = await apiWeeklyReportDetail({ id: props.rowId })
+        Object.assign(formData, data)
+    } finally {
+        loading.value = false
+    }
 }
 
-onMounted(() => {
-    loading()
-})
-
+onMounted(loadDetail)
 
 defineExpose({
-    formRef,
-    formData,
+    formData
 })
-
 </script>
+
+<style scoped>
+.report-info {
+    padding: 0 8px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 30px 0 18px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.section-title span {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: #3430ff;
+}
+
+.reply-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.reply-table td {
+    height: 40px;
+    border: 1px solid #e5e7eb;
+    padding: 12px 16px;
+    vertical-align: top;
+}
+
+.reply-label {
+    width: 18%;
+    background: #eef4ff;
+    text-align: right;
+}
+</style>

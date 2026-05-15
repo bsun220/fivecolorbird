@@ -29,3 +29,8 @@ export function apiWeeklyReportDetail(params: any) {
 export function apiWeeklyReportExamine(params: any) {
     return request.post({ url: '/weekly_report.weekly_report/examine', params })
 }
+
+// 提交周报
+export function apiWeeklyReportSubmit(params: any) {
+    return request.post({ url: '/weekly_report.weekly_report/submit', params })
+}

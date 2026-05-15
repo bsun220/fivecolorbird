@@ -12,7 +12,6 @@
 // | author: likeadminTeam
 // +----------------------------------------------------------------------
 
-
 namespace app\adminapi\controller\performance;
 
 
@@ -148,7 +147,29 @@ class PerformanceController extends BaseAdminController
     }
 
 
-
+    /**
+     * @notes 绩效评分
+     * @return \think\response\Json
+     * @author likeadmin
+     * @date 2025/06/01 23:31
+     */
+    public function evaluate()
+    {
+        $params = (new PerformanceValidate())->post()->goCheck('evaluate');
+        $params['admin_id'] = $this->adminId;
+        $result = PerformanceLogic::evaluate($params);
+        if (true === $result) {
+            LogLogic::add([
+                'admin_id'=>$this->adminId,
+                'admin_name'=>$this->adminInfo['name']??'',
+                'action'=>'评分',
+                'title'=>"绩效",
+                'name'=>Admin::where(['id'=>$params['user_id']])->value('name'),
+            ]);
+            return $this->success('评分成功', [], 1, 1);
+        }
+        return $this->fail(PerformanceLogic::getError());
+    }
 
 
 }

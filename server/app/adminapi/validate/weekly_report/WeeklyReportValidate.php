@@ -26,12 +26,20 @@ use app\common\validate\BaseValidate;
 class WeeklyReportValidate extends BaseValidate
 {
 
-     /**
-      * 设置校验规则
-      * @var string[]
-      */
+    /**
+     * 设置校验规则
+     * @var string[]
+     */
     protected $rule = [
         'id' => 'require',
+        'start_date' => 'require|date',
+        'end_date' => 'require|date',
+        'daily_details' => 'require|array',
+        'total_hours' => 'require|number|egt:0',
+        'overtime_hours' => 'number|egt:0',
+        'todo_items' => 'string',
+        'status' => 'require|in:0,1,2',
+        'reply' => 'string',
     ];
 
 
@@ -41,6 +49,14 @@ class WeeklyReportValidate extends BaseValidate
      */
     protected $field = [
         'id' => 'id',
+        'start_date' => '开始日期',
+        'end_date' => '结束日期',
+        'daily_details' => '每日详情',
+        'total_hours' => '总工时',
+        'overtime_hours' => '加班工时',
+        'todo_items' => '待办事项',
+        'status' => '状态',
+        'reply' => '回复',
     ];
 
 
@@ -52,7 +68,8 @@ class WeeklyReportValidate extends BaseValidate
      */
     public function sceneAdd()
     {
-        return $this->remove('id', true);
+        return $this->remove('id', true)
+            ->remove('status', true);
     }
 
 
@@ -63,6 +80,18 @@ class WeeklyReportValidate extends BaseValidate
      * @date 2025/05/28 09:52
      */
     public function sceneEdit()
+    {
+        return $this->only(['id', 'start_date', 'end_date', 'daily_details', 'total_hours', 'overtime_hours', 'todo_items']);
+    }
+
+
+    /**
+     * @notes 提交场景
+     * @return WeeklyReportValidate
+     * @author likeadmin
+     * @date 2025/05/28 09:52
+     */
+    public function sceneSubmit()
     {
         return $this->only(['id']);
     }
@@ -91,15 +120,16 @@ class WeeklyReportValidate extends BaseValidate
         return $this->only(['id']);
     }
 
+
     /**
-     * @notes 审核
+     * @notes 审核场景
      * @return WeeklyReportValidate
      * @author likeadmin
      * @date 2025/05/28 09:52
      */
     public function sceneExamine()
     {
-        return $this->only(['id']);
+        return $this->only(['id', 'status', 'reply']);
     }
 
 

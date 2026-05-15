@@ -42,8 +42,8 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
     public function setSearch(): array
     {
         return [
-            '=' => ['node_id'],
-            '%like%' => ['node'],
+            '>=' => ['start_date'],
+            '<=' => ['end_date'],
         ];
     }
 
@@ -61,7 +61,7 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
             $where[] = ['user_id', 'in', $id];
         }
 
-        if (!empty($this->params['status'])) {
+        if (isset($this->params['status']) && $this->params['status'] !== '') {
             $where[] = ['status', '=', $this->params['status']];
         }
 
@@ -84,9 +84,15 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
     public function lists(): array
     {
 
-        $list = WeeklyReport::where($this->searchWhere)
+        $query = WeeklyReport::where($this->searchWhere)
             ->where($this->queryWhere())
-            ->field(['id', 'file_name', 'file_url', 'node_id', 'node', 'user_id', 'working_hours', 'actual_hours', 'unfinished_work_hours', 'overtime_hours', 'remarks', 'status', 'create_time'])
+            ->field(['id', 'start_date', 'end_date', 'total_hours', 'overtime_hours', 'status', 'reply', 'submit_time', 'examine_time', 'create_time', 'user_id']);
+
+        if (empty($this->params['type']) || $this->params['type'] != 1) {
+            $query->whereNotNull('submit_time');
+        }
+
+        $list = $query
             ->with(['userInfo'=>function($query){
                 $query->withTrashed()->withoutField(['password', 'password_mw'])->append(['role_id', 'dept_id', 'jobs_id', 'disable_desc']);
             }])
@@ -118,6 +124,9 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
                 $item['userInfo']['dept_name'] = trim($deptName, '/');
                 $item['userInfo']['jobs_name'] = trim($jobsName, '/');
             }
+
+            $item['submit_time'] = !empty($item['submit_time']) ? date('Y-m-d H:i:s', (int)$item['submit_time']) : '';
+            $item['examine_time'] = !empty($item['examine_time']) ? date('Y-m-d H:i:s', (int)$item['examine_time']) : '';
         }
 
         return $list;
@@ -132,7 +141,11 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
      */
     public function count(): int
     {
-        return WeeklyReport::where($this->searchWhere)->count();
+        $query = WeeklyReport::where($this->searchWhere)->where($this->queryWhere());
+        if (empty($this->params['type']) || $this->params['type'] != 1) {
+            $query->whereNotNull('submit_time');
+        }
+        return $query->count();
     }
 
 }

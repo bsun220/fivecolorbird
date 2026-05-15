@@ -1,6 +1,12 @@
-/server/public/uploads
+.DS_Store
+/.idea/
+/.claude/
+
+/server/.env
+/server/public/uploads/
 
 /admin/dist/
 /admin/node_modules/
 /server/public/admin/
-/admin/dist/
+/server/public/admin2/
+/ui/

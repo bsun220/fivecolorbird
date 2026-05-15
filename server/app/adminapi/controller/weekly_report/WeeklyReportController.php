@@ -21,6 +21,8 @@ use app\adminapi\lists\weekly_report\WeeklyReportLists;
 use app\adminapi\logic\log\LogLogic;
 use app\adminapi\logic\weekly_report\WeeklyReportLogic;
 use app\adminapi\validate\weekly_report\WeeklyReportValidate;
+use app\common\model\auth\Admin;
+use app\common\model\weekly_report\WeeklyReport;
 
 
 /**
@@ -54,8 +56,8 @@ class WeeklyReportController extends BaseAdminController
         $params = (new WeeklyReportValidate())->post()->goCheck('add');
         $params['user_id'] = $this->adminId;
         $result = WeeklyReportLogic::add($params);
-        if (true === $result) {
-            return $this->success('添加成功', [], 1, 1);
+        if (false !== $result) {
+            return $this->success('添加成功', $result, 1, 1);
         }
         return $this->fail(WeeklyReportLogic::getError());
     }
@@ -89,8 +91,11 @@ class WeeklyReportController extends BaseAdminController
     {
         $params = (new WeeklyReportValidate())->post()->goCheck('delete');
         $params['user_id'] = $this->adminId;
-        WeeklyReportLogic::delete($params);
-        return $this->success('删除成功', [], 1, 1);
+        $result = WeeklyReportLogic::delete($params);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(WeeklyReportLogic::getError());
     }
 
 
@@ -118,6 +123,7 @@ class WeeklyReportController extends BaseAdminController
     {
         $params = (new WeeklyReportValidate())->post()->goCheck('examine');
         $params['admin_id'] = $this->adminId;
+        $userId = WeeklyReport::where('id', $params['id'])->value('user_id');
         $result = WeeklyReportLogic::examine($params);
         if (true === $result) {
             LogLogic::add([
@@ -125,13 +131,30 @@ class WeeklyReportController extends BaseAdminController
                 'admin_name'=>$this->adminInfo['name']??'',
                 'action'=>'审核',
                 'title'=>"周报",
-                'name'=>"{$params['userInfo']['name']}",
+                'name'=>Admin::where(['id'=>$userId])->value('name') ?: $params['id'],
             ]);
             return $this->success('审核成功', [], 1, 1);
         }
         return $this->fail(WeeklyReportLogic::getError());
     }
 
+
+    /**
+     * @notes 提交周报
+     * @return \think\response\Json
+     * @author likeadmin
+     * @date 2025/05/28 09:52
+     */
+    public function submit()
+    {
+        $params = (new WeeklyReportValidate())->post()->goCheck('submit');
+        $params['user_id'] = $this->adminId;
+        $result = WeeklyReportLogic::submit($params);
+        if (true === $result) {
+            return $this->success('提交成功', [], 1, 1);
+        }
+        return $this->fail(WeeklyReportLogic::getError());
+    }
 
 
 }

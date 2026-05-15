@@ -1,104 +1,73 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
-
 namespace app\adminapi\validate\performance;
-
 
 use app\common\validate\BaseValidate;
 
-
-/**
- * Performance验证器
- * Class PerformanceValidate
- * @package app\adminapi\validate\performance
- */
 class PerformanceValidate extends BaseValidate
 {
-
-     /**
-      * 设置校验规则
-      * @var string[]
-      */
     protected $rule = [
         'id' => 'require',
         'user_id' => 'require',
         'statistical_month' => 'require',
+        'merit_pay' => 'float|egt:0',
+        'merit_pay_note' => 'string',
+        'issue_date' => 'date',
+        'cumulative_merit_pay' => 'float|egt:0',
+        'issued' => 'float|egt:0',
+        'remaining_overtime_hours' => 'float|egt:0',
+        'reward_amount' => 'float|egt:0',
+        'reward_amount_note' => 'string',
+        'penalty_amount' => 'float|egt:0',
+        'penalty_amount_note' => 'string',
+        'work_score' => 'number|egt:0',
+        'work_comment' => 'string',
     ];
 
-
-    /**
-     * 参数描述
-     * @var string[]
-     */
     protected $field = [
         'id' => 'id',
-        'user_id' => 'user_id',
+        'user_id' => '用户id',
         'statistical_month' => '统计月份',
+        'merit_pay' => '绩效工资',
+        'merit_pay_note' => '绩效工资说明',
+        'issue_date' => '预计发放日期',
+        'cumulative_merit_pay' => '累计绩效工资',
+        'issued' => '已发绩效奖金',
+        'remaining_overtime_hours' => '剩余加班工时',
+        'reward_amount' => '奖励金额',
+        'reward_amount_note' => '奖励金额说明',
+        'penalty_amount' => '处罚金额',
+        'penalty_amount_note' => '处罚金额说明',
+        'work_score' => '工作评分',
+        'work_comment' => '工作点评',
     ];
 
-
-    /**
-     * @notes 添加场景
-     * @return PerformanceValidate
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public function sceneAdd()
     {
-        return $this->only(['user_id','statistical_month']);
+        return $this->remove('id', true);
     }
 
-
-    /**
-     * @notes 编辑场景
-     * @return PerformanceValidate
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public function sceneEdit()
     {
-        return $this->only(['id','user_id','statistical_month']);
+        return $this->only(['id', 'user_id', 'statistical_month', 'merit_pay', 'merit_pay_note', 'issue_date', 'cumulative_merit_pay', 'issued', 'remaining_overtime_hours', 'reward_amount', 'reward_amount_note', 'penalty_amount', 'penalty_amount_note', 'work_score', 'work_comment']);
     }
 
-
-    /**
-     * @notes 删除场景
-     * @return PerformanceValidate
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public function sceneDelete()
     {
         return $this->only(['id']);
     }
 
-
-    /**
-     * @notes 详情场景
-     * @return PerformanceValidate
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public function sceneDetail()
     {
         return $this->only(['id']);
     }
 
-    public function sceneWeeklyReportList()
+    public function sceneEvaluate()
     {
-        return $this->only(['statistical_month','user_id']);
+        return $this->only(['id', 'work_score', 'work_comment', 'merit_pay', 'merit_pay_note', 'reward_amount', 'reward_amount_note', 'penalty_amount', 'penalty_amount_note', 'remaining_overtime_hours']);
     }
 
-
+    public function sceneWeeklyReportList()
+    {
+        return $this->only(['user_id', 'month', 'statistical_month']);
+    }
 }

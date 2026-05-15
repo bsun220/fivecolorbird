@@ -16,7 +16,7 @@ namespace app\adminapi\lists\performance;
 
 
 use app\adminapi\lists\BaseAdminDataLists;
-use app\common\model\auth\SystemRole;
+use app\common\model\auth\Admin;
 use app\common\model\dept\Dept;
 use app\common\model\dept\Jobs;
 use app\common\model\performance\Performance;
@@ -24,28 +24,57 @@ use app\common\lists\ListsSearchInterface;
 
 
 /**
- * 绩效列表
+ * Performance列表
  * Class PerformanceLists
- * @package app\adminapi\listsperformance
+ * @package app\adminapi\lists\performance
  */
 class PerformanceLists extends BaseAdminDataLists implements ListsSearchInterface
 {
 
-
     /**
      * @notes 设置搜索条件
-     * @return \string[][]
+     * @return array
      * @author likeadmin
-     * @date 2025/06/01 23:31
+     * @date 2025/05/28 09:52
      */
     public function setSearch(): array
     {
         return [
-            '=' => ['user_id', 'statistical_month', 'merit_pay', 'merit_pay_note', 'cumulative_merit_pay', 'issued', 'reward_amount', 'reward_amount_note', 'penalty_amount', 'penalty_amount_note', 'work_score', 'work_comment'],
-            'between_time' => 'issue_date',
+            '=' => ['user_id', 'work_score'],
+            'like' => ['statistical_month'],
+            'between' => ['statistical_month'],
         ];
     }
 
+    /**
+     * @notes 自定义查询条件
+     * @return array
+     * @author likeadmin
+     * @date 2025/05/28 09:52
+     */
+    public function queryWhere()
+    {
+        $where = [];
+
+        if (!empty($this->params['name'])) {
+            $id = Admin::where(['name' => $this->params['name']])->column('id');
+            $where[] = ['user_id', 'in', $id];
+        }
+
+        if (!empty($this->params['work_score'])) {
+            $where[] = ['work_score', '=', $this->params['work_score']];
+        }
+
+        if (!empty($this->params['month'])) {
+            $where[] = ['statistical_month', '=', $this->params['month']];
+        }
+
+        if (!empty($this->params['type']) && $this->params['type'] == 1) {
+            $where[] = ['user_id', '=', $this->adminId];
+        }
+
+        return $where;
+    }
 
     /**
      * @notes 获取列表
@@ -54,74 +83,64 @@ class PerformanceLists extends BaseAdminDataLists implements ListsSearchInterfac
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      * @author likeadmin
-     * @date 2025/06/01 23:31
+     * @date 2025/05/28 09:52
      */
     public function lists(): array
     {
-        $type = $this->request->get('type');
-        if(!empty($type)){
-            $this->searchWhere[] = ['user_id', '=', $this->adminId];
-        }
-
         $list = Performance::where($this->searchWhere)
-            ->field(['id', 'user_id', 'statistical_month', 'merit_pay', 'merit_pay_note', 'issue_date', 'cumulative_merit_pay', 'issued', 'reward_amount', 'reward_amount_note', 'penalty_amount', 'penalty_amount_note', 'work_score', 'work_comment'])
-            ->with(['userInfo' => function($query) {
-                $query->withTrashed(); // 包含已删除的用户信息
+            ->where($this->queryWhere())
+            ->field([
+                'id', 'user_id', 'statistical_month', 'merit_pay', 'merit_pay_note',
+                'issue_date', 'cumulative_merit_pay', 'issued', 'reward_amount',
+                'remaining_overtime_hours', 'reward_amount_note', 'penalty_amount', 'penalty_amount_note',
+                'work_score', 'work_comment', 'admin_id', 'create_time'
+            ])
+            ->append(['work_score_desc'])
+            ->with(['userInfo' => function ($query) {
+                $query->withTrashed()->withoutField(['password', 'password_mw'])->append(['role_id', 'dept_id', 'jobs_id', 'disable_desc']);
             }])
             ->limit($this->limitOffset, $this->limitLength)
             ->order(['id' => 'desc'])
             ->select()
             ->toArray();
 
-        // 角色数组（'角色id'=>'角色名称')
-        $roleLists = SystemRole::column('name', 'id');
         // 部门列表
         $deptLists = Dept::column('name', 'id');
         // 岗位列表
         $jobsLists = Jobs::column('name', 'id');
 
-        //管理员列表增加角色名称
-        foreach ($list as $k => $v) {
-            $roleName = '';
-            if ($v['userInfo']['root'] == 1) {
-                $roleName = '系统管理员';
-            } else {
-                foreach ($v['userInfo']['role_id'] as $roleId) {
-                    $roleName .= $roleLists[$roleId] ?? '';
-                    $roleName .= '/';
+        foreach ($list as $key => &$item) {
+            $userInfo = $item['userInfo'];
+            if ($userInfo) {
+                $deptName = '';
+                foreach ($userInfo['dept_id'] as $deptId) {
+                    $deptName .= $deptLists[$deptId] ?? '';
+                    $deptName .= '/';
                 }
-            }
 
-            $deptName = '';
-            foreach ($v['userInfo']['dept_id'] as $deptId) {
-                $deptName .= $deptLists[$deptId] ?? '';
-                $deptName .= '/';
-            }
+                $jobsName = '';
+                foreach ($userInfo['jobs_id'] as $jobsId) {
+                    $jobsName .= $jobsLists[$jobsId] ?? '';
+                    $jobsName .= '/';
+                }
 
-            $jobsName = '';
-            foreach ($v['userInfo']['jobs_id'] as $jobsId) {
-                $jobsName .= $jobsLists[$jobsId] ?? '';
-                $jobsName .= '/';
+                $item['userInfo']['dept_name'] = trim($deptName, '/');
+                $item['userInfo']['jobs_name'] = trim($jobsName, '/');
             }
-
-            $list[$k]['userInfo']['role_name'] = trim($roleName, '/');
-            $list[$k]['userInfo']['dept_name'] = trim($deptName, '/');
-            $list[$k]['userInfo']['jobs_name'] = trim($jobsName, '/');
         }
 
         return $list;
     }
 
-
     /**
      * @notes 获取数量
      * @return int
      * @author likeadmin
-     * @date 2025/06/01 23:31
+     * @date 2025/05/28 09:52
      */
     public function count(): int
     {
-        return Performance::where($this->searchWhere)->count();
+        return Performance::where($this->searchWhere)->where($this->queryWhere())->count();
     }
 
 }

@@ -1,66 +1,41 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
-
 namespace app\adminapi\logic\performance;
 
-
+use app\adminapi\logic\system_msg\SystemMsgLogic;
 use app\common\model\dept\Dept;
 use app\common\model\dept\Jobs;
 use app\common\model\performance\Performance;
+use app\common\model\weekly_report\WeeklyReport;
 use app\common\logic\BaseLogic;
-use app\common\model\WeeklyReport;
+use think\Exception;
 use think\facade\Db;
 
-
-/**
- * Performance逻辑
- * Class PerformanceLogic
- * @package app\adminapi\logic\performance
- */
 class PerformanceLogic extends BaseLogic
 {
-
-
-    /**
-     * @notes 添加
-     * @param array $params
-     * @return bool
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
-    public static function add(array $params)
+    public static function add(array $params): bool
     {
         Db::startTrans();
         try {
-            $Performance = Performance::create([
+            $data = [
                 'user_id' => $params['user_id'],
-                'statistical_month' => $params['statistical_month'],
-                'merit_pay' => $params['merit_pay'],
-                'merit_pay_note' => $params['merit_pay_note'],
-                'issue_date' => $params['issue_date'],
-                'cumulative_merit_pay' => $params['cumulative_merit_pay'],
-                'issued' => $params['issued'],
-                'reward_amount' => $params['reward_amount'],
-                'reward_amount_note' => $params['reward_amount_note'],
-                'penalty_amount' => $params['penalty_amount'],
-                'penalty_amount_note' => $params['penalty_amount_note'],
-                'work_score' => $params['work_score'],
-                'work_comment' => $params['work_comment']
-            ]);
+                'statistical_month' => $params['statistical_month'] ?? '',
+                'merit_pay' => $params['merit_pay'] ?? 0,
+                'merit_pay_note' => $params['merit_pay_note'] ?? '',
+                'issue_date' => $params['issue_date'] ?? null,
+                'cumulative_merit_pay' => $params['cumulative_merit_pay'] ?? 0,
+                'issued' => $params['issued'] ?? 0,
+                'remaining_overtime_hours' => $params['remaining_overtime_hours'] ?? 0,
+                'reward_amount' => $params['reward_amount'] ?? 0,
+                'reward_amount_note' => $params['reward_amount_note'] ?? '',
+                'penalty_amount' => $params['penalty_amount'] ?? 0,
+                'penalty_amount_note' => $params['penalty_amount_note'] ?? '',
+                'work_score' => $params['work_score'] ?? null,
+                'work_comment' => $params['work_comment'] ?? '',
+            ];
 
+            Performance::create($data);
             Db::commit();
-            return $Performance;
+            return true;
         } catch (\Exception $e) {
             Db::rollback();
             self::setError($e->getMessage());
@@ -68,32 +43,116 @@ class PerformanceLogic extends BaseLogic
         }
     }
 
-
-    /**
-     * @notes 编辑
-     * @param array $params
-     * @return bool
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public static function edit(array $params): bool
     {
         Db::startTrans();
         try {
-            Performance::where('id', $params['id'])->update([
-                'user_id' => $params['user_id'],
-                'statistical_month' => $params['statistical_month'],
-                'merit_pay' => $params['merit_pay'],
-                'merit_pay_note' => $params['merit_pay_note'],
-                'issue_date' => $params['issue_date'],
-                'cumulative_merit_pay' => $params['cumulative_merit_pay'],
-                'issued' => $params['issued'],
-                'reward_amount' => $params['reward_amount'],
-                'reward_amount_note' => $params['reward_amount_note'],
-                'penalty_amount' => $params['penalty_amount'],
-                'penalty_amount_note' => $params['penalty_amount_note'],
-                'work_score' => $params['work_score'],
-                'work_comment' => $params['work_comment']
+            $Performance = Performance::findOrEmpty($params['id']);
+            if ($Performance->isEmpty()) {
+                throw new Exception("绩效记录不存在");
+            }
+
+            $data = [
+                'statistical_month' => $params['statistical_month'] ?? '',
+                'merit_pay' => $params['merit_pay'] ?? 0,
+                'merit_pay_note' => $params['merit_pay_note'] ?? '',
+                'issue_date' => $params['issue_date'] ?? null,
+                'cumulative_merit_pay' => $params['cumulative_merit_pay'] ?? 0,
+                'issued' => $params['issued'] ?? 0,
+                'remaining_overtime_hours' => $params['remaining_overtime_hours'] ?? $Performance->remaining_overtime_hours ?? 0,
+                'reward_amount' => $params['reward_amount'] ?? 0,
+                'reward_amount_note' => $params['reward_amount_note'] ?? '',
+                'penalty_amount' => $params['penalty_amount'] ?? 0,
+                'penalty_amount_note' => $params['penalty_amount_note'] ?? '',
+                'work_score' => $params['work_score'] ?? null,
+                'work_comment' => $params['work_comment'] ?? '',
+            ];
+
+            Performance::where('id', $params['id'])->update($data);
+            Db::commit();
+            return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    public static function delete(array $params): bool
+    {
+        return Performance::destroy($params['id']);
+    }
+
+    public static function detail($params): array
+    {
+        $Performance = Performance::where(['id' => $params['id']])
+            ->with(['userInfo' => function ($query) {
+                $query->withTrashed()
+                    ->withoutField(['password', 'password_mw'])
+                    ->append(['role_id', 'dept_id', 'jobs_id', 'disable_desc']);
+            }])
+            ->append(['work_score_desc'])
+            ->find();
+
+        if (empty($Performance)) {
+            return [];
+        }
+
+        $Performance = $Performance->toArray();
+
+        $deptLists = Dept::column('name', 'id');
+        $jobsLists = Jobs::column('name', 'id');
+
+        if (!empty($Performance['userInfo']['dept_id'])) {
+            $deptName = '';
+            foreach ((array)$Performance['userInfo']['dept_id'] as $deptId) {
+                $deptName .= $deptLists[$deptId] ?? '';
+                $deptName .= '/';
+            }
+            $Performance['userInfo']['dept_name'] = trim($deptName, '/');
+        }
+
+        if (!empty($Performance['userInfo']['jobs_id'])) {
+            $jobsName = '';
+            foreach ((array)$Performance['userInfo']['jobs_id'] as $jobsId) {
+                $jobsName .= $jobsLists[$jobsId] ?? '';
+                $jobsName .= '/';
+            }
+            $Performance['userInfo']['jobs_name'] = trim($jobsName, '/');
+        }
+
+        $Performance['remaining_overtime_hours'] = (float)($Performance['remaining_overtime_hours'] ?? 0);
+
+        return $Performance;
+    }
+
+    public static function evaluate(array $params): bool
+    {
+        Db::startTrans();
+        try {
+            $Performance = Performance::findOrEmpty($params['id']);
+            if ($Performance->isEmpty()) {
+                throw new Exception("绩效记录不存在");
+            }
+
+            $data = [
+                'work_score' => $params['work_score'] ?? null,
+                'work_comment' => $params['work_comment'] ?? '',
+                'merit_pay' => $params['merit_pay'] ?? 0,
+                'merit_pay_note' => $params['merit_pay_note'] ?? '',
+                'reward_amount' => $params['reward_amount'] ?? 0,
+                'reward_amount_note' => $params['reward_amount_note'] ?? '',
+                'penalty_amount' => $params['penalty_amount'] ?? 0,
+                'penalty_amount_note' => $params['penalty_amount_note'] ?? '',
+                'remaining_overtime_hours' => $params['remaining_overtime_hours'] ?? $Performance->remaining_overtime_hours ?? 0,
+                'admin_id' => $params['admin_id'] ?? 0,
+            ];
+
+            Performance::where('id', $params['id'])->update($data);
+
+            SystemMsgLogic::add([
+                'content' => "您的绩效已评分",
+                'user_id' => $Performance->user_id,
             ]);
 
             Db::commit();
@@ -105,89 +164,42 @@ class PerformanceLogic extends BaseLogic
         }
     }
 
-
-    /**
-     * @notes 删除
-     * @param array $params
-     * @return bool
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
-    public static function delete(array $params): bool
-    {
-        return Performance::destroy($params['id']);
-    }
-
-
-    /**
-     * @notes 获取详情
-     * @param $params
-     * @return array
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
-    public static function detail($params): array
-    {
-        $info = Performance::with(['userInfo' => function($query) {
-                $query->withTrashed(); // 包含已删除的用户信息
-            }])
-            ->findOrEmpty($params['id'])->toArray();
-
-        // 部门列表
-        $deptLists = Dept::column('name', 'id');
-        // 岗位列表
-        $jobsLists = Jobs::column('name', 'id');
-
-
-        $userInfo = $info['userInfo'];
-
-        $deptName = '';
-        foreach ($userInfo['dept_id'] as $deptId) {
-            $deptName .= $deptLists[$deptId] ?? '';
-            $deptName .= '/';
-        }
-
-        $jobsName = '';
-        foreach ($userInfo['jobs_id'] as $jobsId) {
-            $jobsName .= $jobsLists[$jobsId] ?? '';
-            $jobsName .= '/';
-        }
-
-        $info['userInfo']['dept_name'] = trim($deptName, '/');
-        $info['userInfo']['jobs_name'] = trim($jobsName, '/');
-
-
-        return $info;
-    }
-
-
-    /**
-     * @notes 获取详情
-     * @param $params
-     * @return array
-     * @author likeadmin
-     * @date 2025/06/01 23:31
-     */
     public static function weeklyReportList($params): array
     {
-        $statistical_month = $params['statistical_month'];
-        $user_id = $params['user_id'];
-        list($date,$month) =  explode('-',$statistical_month);
-        $where = [
-            'user_id' => $user_id,
-            'date' => $date,
-            'month' => intval($month),
-            'status' => WeeklyReport::YES,
-        ];
-        $field = [
-            'node',
-            'actual_hours',
-            'overtime_hours',
-            'remarks',
-        ];
-        return WeeklyReport::field($field)->where($where)->select()->toArray();
+        $where = [];
+        if (!empty($params['user_id'])) {
+            $where[] = ['user_id', '=', $params['user_id']];
+        }
+
+        $month = $params['statistical_month'] ?? ($params['month'] ?? '');
+        $monthRange = self::monthDateRange($month);
+        if (!empty($monthRange)) {
+            $where[] = ['start_date', '<=', $monthRange['end']];
+            $where[] = ['end_date', '>=', $monthRange['start']];
+        }
+
+        $list = WeeklyReport::where($where)
+            ->field(['id', 'start_date', 'end_date', 'total_hours', 'overtime_hours', 'reply', 'status', 'create_time'])
+            ->order(['id' => 'desc'])
+            ->select()
+            ->toArray();
+
+        return $list;
     }
 
-
+    private static function monthDateRange($month): array
+    {
+        if (empty($month)) {
+            return [];
+        }
+        $timestamp = strtotime($month . '-01');
+        if (empty($timestamp)) {
+            return [];
+        }
+        return [
+            'start' => date('Y-m-01', $timestamp),
+            'end' => date('Y-m-t', $timestamp),
+        ];
+    }
 
 }

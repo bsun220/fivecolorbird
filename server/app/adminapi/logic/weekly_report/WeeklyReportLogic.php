@@ -2,7 +2,7 @@
 // +----------------------------------------------------------------------
 // | likeadmin快速开发前后端分离管理后台（PHP版）
 // +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
+// | 欢迎阅读学习系统代码，建议反馈是我们前进的动力
 // | 开源版本可自由商用，可去除界面版权logo
 // | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
 // | github下载：https://github.com/likeshop-github/likeadmin
@@ -18,7 +18,6 @@ namespace app\adminapi\logic\weekly_report;
 use app\adminapi\logic\system_msg\SystemMsgLogic;
 use app\common\model\dept\Dept;
 use app\common\model\dept\Jobs;
-use app\common\model\dict\DictData;
 use app\common\model\weekly_report\WeeklyReport;
 use app\common\logic\BaseLogic;
 use think\Exception;
@@ -33,59 +32,45 @@ use think\facade\Db;
 class WeeklyReportLogic extends BaseLogic
 {
 
-
     /**
      * @notes 添加
      * @param array $params
-     * @return bool
+     * @return array|false
      * @author likeadmin
      * @date 2025/05/28 09:52
      */
-    public static function add(array $params): bool
+    public static function add(array $params)
     {
         Db::startTrans();
         try {
-//            $node_name = DictData::where(['value' => $params['node']])->value('name');
+            // 检查同一用户同一周期是否已存在
+            $exist = WeeklyReport::where([
+                'user_id' => $params['user_id'],
+                'start_date' => $params['start_date'],
+                'end_date' => $params['end_date'],
+            ])->findOrEmpty();
 
-            $WeeklyReport = WeeklyReport::where(['user_id'=>$params['user_id'], 'node_id'=>$params['node_id']])->findOrEmpty();
-            if(!$WeeklyReport->isEmpty()){
-                throw new Exception("节点已存在");
+            if (!$exist->isEmpty()) {
+                throw new Exception("该周期周报已存在");
             }
-
-            $result = [];
-            if (preg_match('/(\d{4})年(\d{1,2})月第(.*?)周/', $params['node'], $matches)) {
-                $result = [
-                    'year' => (int)$matches[1],
-                    'month' => (int)$matches[2],
-                    'week' => $matches[3]
-                ];
-            }
-
 
             $data = [
-                'file_url' => $params['file_url'],
-                'node_id' => $params['node_id'],
                 'user_id' => $params['user_id'],
-
-                'date' => $result['year'] ?? null,
-                'month' => $result['month'] ?? null,
-                'week' => $result['week'] ?? null,
+                'start_date' => $params['start_date'],
+                'end_date' => $params['end_date'],
+                'daily_details' => $params['daily_details'] ?? [],
+                'total_hours' => $params['total_hours'] ?? 0,
+                'overtime_hours' => $params['overtime_hours'] ?? 0,
+                'todo_items' => $params['todo_items'] ?? '',
+                'status' => 0,
+                'submit_time' => null,
+                'reply' => '',
             ];
 
-            if($params['file'] && !empty($params['file'])){
-                $data['file_name'] = $params['file'][0]['name'];
-            }
-
-            if($params['node'] && !empty($params['node'])){
-                $data['node'] = $params['node'];
-            }
-
-            WeeklyReport::create($data);
-
-            SystemMsgLogic::add(['content'=>"添加周报", 'user_id'=>$params['user_id']]);
+            $weeklyReport = WeeklyReport::create($data);
 
             Db::commit();
-            return true;
+            return ['id' => $weeklyReport->id];
         } catch (\Exception $e) {
             Db::rollback();
             self::setError($e->getMessage());
@@ -105,44 +90,47 @@ class WeeklyReportLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-
-            $WeeklyReport = WeeklyReport::where(['user_id'=>$params['user_id'], 'node_id'=>$params['node_id']])
-                ->where([['id', '!=', $params['id']]])->findOrEmpty();
-            if(!$WeeklyReport->isEmpty()){
-                throw new Exception("节点已存在");
+            $WeeklyReport = WeeklyReport::where([
+                'id' => $params['id'],
+                'user_id' => $params['user_id'],
+            ])->findOrEmpty();
+            if ($WeeklyReport->isEmpty()) {
+                throw new Exception("周报不存在");
             }
 
-            $result = [];
-            if (preg_match('/(\d{4})年(\d{1,2})月第(.*?)周/', $params['node'], $matches)) {
-                $result = [
-                    'year' => (int)$matches[1],
-                    'month' => (int)$matches[2],
-                    'week' => $matches[3]
-                ];
+            // 已审批(status=1)的周报不能修改
+            if ($WeeklyReport->status == 1) {
+                throw new Exception("已审批的周报不能修改");
             }
 
+            $exist = WeeklyReport::where([
+                'user_id' => $params['user_id'],
+                'start_date' => $params['start_date'],
+                'end_date' => $params['end_date'],
+            ])->where('id', '<>', $params['id'])->findOrEmpty();
+            if (!$exist->isEmpty()) {
+                throw new Exception("该周期周报已存在");
+            }
 
             $data = [
-                'file_url' => $params['file_url'],
-                'node_id' => $params['node_id'],
-                'user_id' => $params['user_id'],
-
-                'date' => $result['year'] ?? null,
-                'month' => $result['month'] ?? null,
-                'week' => $result['week'] ?? null,
+                'start_date' => $params['start_date'],
+                'end_date' => $params['end_date'],
+                'daily_details' => $params['daily_details'] ?? [],
+                'total_hours' => $params['total_hours'] ?? 0,
+                'overtime_hours' => $params['overtime_hours'] ?? 0,
+                'todo_items' => $params['todo_items'] ?? '',
             ];
 
-            if($params['file'] && !empty($params['file'])){
-                $data['file_name'] = $params['file'][0]['name'];
+            if ($WeeklyReport->status == 2) {
+                $data['status'] = 0;
+                $data['submit_time'] = null;
+                $data['reply'] = '';
+                $data['admin_id'] = 0;
+                $data['examine_time'] = null;
             }
-
-            if($params['node'] && !empty($params['node'])){
-                $data['node'] = $params['node'];
-            }
-
 
             WeeklyReport::where('id', $params['id'])->update($data);
-            SystemMsgLogic::add(['content'=>"编辑周报", 'user_id'=>$params['user_id']]);
+
             Db::commit();
             return true;
         } catch (\Exception $e) {
@@ -162,51 +150,57 @@ class WeeklyReportLogic extends BaseLogic
      */
     public static function delete(array $params): bool
     {
-        SystemMsgLogic::add(['content'=>"删除周报", 'user_id'=>$params['user_id']]);
-        return WeeklyReport::destroy($params['id']);
+        $weeklyReport = WeeklyReport::where([
+            'id' => $params['id'],
+            'user_id' => $params['user_id'],
+        ])->findOrEmpty();
+
+        if ($weeklyReport->isEmpty()) {
+            self::setError('周报不存在或无权删除');
+            return false;
+        }
+
+        return (bool)$weeklyReport->delete();
     }
 
 
     /**
-     * @notes 获取详情
-     * @param $params
-     * @return array
+     * @notes 提交
+     * @param array $params
+     * @return bool
      * @author likeadmin
      * @date 2025/05/28 09:52
      */
-    public static function detail($params): array
+    public static function submit(array $params): bool
     {
-        $WeeklyReport = WeeklyReport::where(['id'=>$params['id']])
-            ->field(['id', 'file_name', 'file_url', 'node_id', 'node', 'user_id', 'working_hours', 'actual_hours', 'unfinished_work_hours', 'overtime_hours', 'remarks', 'status'])
-            ->with(['userInfo'=>function($query){
-                $query->withTrashed()->withoutField(['password', 'password_mw'])->append(['role_id', 'dept_id', 'jobs_id', 'disable_desc']);
-            }])
-            ->find()
-            ->toArray();
+        Db::startTrans();
+        try {
+            $WeeklyReport = WeeklyReport::where([
+                'id' => $params['id'],
+                'user_id' => $params['user_id'],
+            ])->findOrEmpty();
+            if ($WeeklyReport->isEmpty()) {
+                throw new Exception("周报不存在");
+            }
 
-        // 部门列表
-        $deptLists = Dept::column('name', 'id');
-        // 岗位列表
-        $jobsLists = Jobs::column('name', 'id');
+            // 检查状态为草稿(0)
+            if ($WeeklyReport->status != 0) {
+                throw new Exception("只能提交草稿状态的周报");
+            }
 
-        $deptName = '';
-        foreach ($WeeklyReport['userInfo']['dept_id'] as $deptId) {
-            $deptName .= $deptLists[$deptId] ?? '';
-            $deptName .= '/';
+            // 标记为已提交待审批（status仍为0，但记录提交时间）
+            WeeklyReport::where('id', $params['id'])->update([
+                'submit_time' => time(),
+            ]);
+
+            Db::commit();
+            return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
         }
-
-        $jobsName = '';
-        foreach ($WeeklyReport['userInfo']['jobs_id'] as $jobsId) {
-            $jobsName .= $jobsLists[$jobsId] ?? '';
-            $jobsName .= '/';
-        }
-
-        $WeeklyReport['userInfo']['dept_name'] = trim($deptName, '/');
-        $WeeklyReport['userInfo']['jobs_name'] = trim($jobsName, '/');
-
-        return $WeeklyReport;
     }
-
 
 
     /**
@@ -220,15 +214,30 @@ class WeeklyReportLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-            $data = $params;
-            unset($data['id']);
-            unset($data['userInfo']);
-            unset($data['node']);
+            $WeeklyReport = WeeklyReport::findOrEmpty($params['id']);
+            if ($WeeklyReport->isEmpty()) {
+                throw new Exception("周报不存在");
+            }
+
+            if (empty($WeeklyReport->submit_time)) {
+                throw new Exception("周报未提交，不能审核");
+            }
+
+            $data = [
+                'status' => $params['status'], // 1=已审批 2=驳回
+                'reply' => $params['reply'] ?? '',
+                'admin_id' => $params['admin_id'] ?? 0,
+                'examine_time' => time(),
+            ];
 
             WeeklyReport::where('id', $params['id'])->update($data);
 
-            $params['user_id'] = WeeklyReport::where('id', $params['id'])->value('user_id');
-            SystemMsgLogic::add(['content'=>"周报被审核", 'user_id'=>$params['user_id']]);
+            // 发送系统消息
+            SystemMsgLogic::add([
+                'content' => "周报被审核，审核结果：" . ($params['status'] == 1 ? "已审批" : "驳回"),
+                'user_id' => $WeeklyReport->user_id,
+            ]);
+
             Db::commit();
             return true;
         } catch (\Exception $e) {
@@ -236,6 +245,70 @@ class WeeklyReportLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+
+    /**
+     * @notes 获取详情
+     * @param $params
+     * @return array
+     * @author likeadmin
+     * @date 2025/05/28 09:52
+     */
+    public static function detail($params): array
+    {
+        $WeeklyReport = WeeklyReport::where(['id' => $params['id']])
+            ->field([
+                'id', 'start_date', 'end_date', 'daily_details',
+                'total_hours', 'overtime_hours', 'todo_items',
+                'status', 'reply', 'user_id', 'admin_id',
+                'submit_time', 'examine_time', 'create_time', 'update_time'
+            ])
+            ->with(['userInfo' => function ($query) {
+                $query->withTrashed()
+                    ->withoutField(['password', 'password_mw'])
+                    ->append(['role_id', 'dept_id', 'jobs_id', 'disable_desc']);
+            }, 'adminInfo' => function ($query) {
+                $query->withTrashed()
+                    ->withoutField(['password', 'password_mw']);
+            }])
+            ->find();
+
+        if (empty($WeeklyReport)) {
+            return [];
+        }
+
+        $WeeklyReport = $WeeklyReport->toArray();
+
+        // 部门列表
+        $deptLists = Dept::column('name', 'id');
+        // 岗位列表
+        $jobsLists = Jobs::column('name', 'id');
+
+        // 处理部门名称
+        $deptName = '';
+        if (!empty($WeeklyReport['userInfo']['dept_id'])) {
+            foreach ((array)$WeeklyReport['userInfo']['dept_id'] as $deptId) {
+                $deptName .= $deptLists[$deptId] ?? '';
+                $deptName .= '/';
+            }
+        }
+        $WeeklyReport['userInfo']['dept_name'] = trim($deptName, '/');
+
+        // 处理岗位名称
+        $jobsName = '';
+        if (!empty($WeeklyReport['userInfo']['jobs_id'])) {
+            foreach ((array)$WeeklyReport['userInfo']['jobs_id'] as $jobsId) {
+                $jobsName .= $jobsLists[$jobsId] ?? '';
+                $jobsName .= '/';
+            }
+        }
+        $WeeklyReport['userInfo']['jobs_name'] = trim($jobsName, '/');
+
+        $WeeklyReport['submit_time'] = !empty($WeeklyReport['submit_time']) ? date('Y-m-d H:i:s', (int)$WeeklyReport['submit_time']) : '';
+        $WeeklyReport['examine_time'] = !empty($WeeklyReport['examine_time']) ? date('Y-m-d H:i:s', (int)$WeeklyReport['examine_time']) : '';
+
+        return $WeeklyReport;
     }
 
 }
