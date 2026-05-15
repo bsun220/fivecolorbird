@@ -4,9 +4,11 @@
 
 /server/.env
 /server/public/uploads/
-
+/server/vendor
 /admin/dist/
 /admin/node_modules/
 /server/public/admin/
 /server/public/admin2/
 /ui/
+
+
