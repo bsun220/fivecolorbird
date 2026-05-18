@@ -31,6 +31,8 @@ npm install
 
 ```sh
 npm run dev
+
+npm --prefix admin run dev
 ```
 
 ### Type-Check, Compile and Minify for Production

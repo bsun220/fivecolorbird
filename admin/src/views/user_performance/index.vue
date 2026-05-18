@@ -112,6 +112,7 @@
                     </el-table-column>
                     <el-table-column label="发放日期" prop="issue_date" show-overflow-tooltip />
                     <el-table-column label="累计绩效" prop="cumulative_merit_pay" show-overflow-tooltip />
+                    <el-table-column label="剩余加班工时" prop="remaining_overtime_hours" min-width="140" show-overflow-tooltip />
                     <el-table-column label="已发绩效" prop="issued" show-overflow-tooltip />
                     <el-table-column label="奖励金额" prop="reward_amount" show-overflow-tooltip />
                     <el-table-column label="奖励说明" prop="reward_amount_note" show-overflow-tooltip>

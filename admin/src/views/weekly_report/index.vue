@@ -20,7 +20,12 @@
                     />
                 </el-form-item>
                 <el-form-item label="审核状态" prop="status">
-                    <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+                    <el-select
+                        v-model="queryParams.status"
+                        class="status-select"
+                        placeholder="请选择状态"
+                        clearable
+                    >
                         <el-option label="全部" value=""></el-option>
                         <el-option label="未审批" :value="0" />
                         <el-option label="已审批" :value="1" />
@@ -70,7 +75,7 @@
                     <el-table-column label="操作" width="230" fixed="right">
                         <template #default="{ row }">
                             <el-button
-                                v-if="row.status == 0"
+                                v-if="(row.status == 0 && !row.submit_time) || row.status == 2"
                                 v-perms="['weekly_report.weekly_report/edit']"
                                 type="primary"
                                 link
@@ -79,16 +84,7 @@
                                 编辑
                             </el-button>
                             <el-button
-                                v-if="row.status == 2"
-                                v-perms="['weekly_report.weekly_report/edit']"
-                                type="primary"
-                                link
-                                @click="handleEdit(row)"
-                            >
-                                编辑
-                            </el-button>
-                            <el-button
-                                v-if="row.status == 0"
+                                v-if="row.status == 0 && !row.submit_time"
                                 v-perms="['weekly_report.weekly_report/delete']"
                                 type="danger"
                                 link
@@ -211,6 +207,13 @@ getLists()
 </script>
 
 <style scoped>
+.status-select {
+    width: 180px;
+}
+
+:deep(.status-select .el-input__wrapper) {
+    min-height: 32px;
+}
 :global(.report-preview-dialog .el-dialog__body) {
     max-height: 72vh;
     overflow-y: auto;

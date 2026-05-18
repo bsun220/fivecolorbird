@@ -34,7 +34,7 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label-cell blank-cell"></td>
+                        <td class="label-cell date-cell">{{ getDayDate(index) }}</td>
                         <td class="center-cell">星期{{ getDayWeekday(day, index) }}</td>
                         <td class="label-cell right-cell">合计工时</td>
                         <td>{{ getDayHours(day) }}</td>
@@ -161,6 +161,17 @@ const getWeekdayByDate = (date: Date | null) => {
     return weekdays[date.getDay()]
 }
 
+const formatDateDisplay = (date: Date | null) => {
+    if (!date) return ''
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${month}-${day}`
+}
+
+const getDayDate = (index: number) => {
+    return formatDateDisplay(getDateByOffset((props.data as any).start_date, index))
+}
+
 const getDayWeekday = (day: any, index: number) => {
     const weekday = getWeekdayByDate(getDateByOffset((props.data as any).start_date, index))
     return weekday || day.weekday || '-'
@@ -258,8 +269,11 @@ const getDayHours = (day: any) => {
     text-align: center !important;
 }
 
-.blank-cell {
+.date-cell {
     width: 19%;
+    text-align: center !important;
+    font-weight: 500;
+    color: #303133;
 }
 
 .center-cell {
@@ -312,6 +326,7 @@ const getDayHours = (day: any) => {
 
 .day-meta-table td {
     height: 48px;
+    border-bottom: none;
 }
 
 .work-table th {
