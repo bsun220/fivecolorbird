@@ -31,6 +31,60 @@ use think\facade\Db;
  */
 class WeeklyReportLogic extends BaseLogic
 {
+    private static function normalizeHour($value): float
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+        return round(max((float)$value, 0), 1);
+    }
+
+    private static function normalizeDailyDetails($value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        foreach ($value as &$day) {
+            if (!is_array($day)) {
+                $day = [];
+            }
+
+            $tasks = $day['tasks'] ?? [];
+            $tasks = is_array($tasks) && !empty($tasks) ? $tasks : [];
+            $totalHours = 0.0;
+
+            foreach ($tasks as &$task) {
+                if (!is_array($task)) {
+                    $task = [];
+                }
+                $task['hours'] = self::normalizeHour($task['hours'] ?? 0);
+                $totalHours += $task['hours'];
+            }
+            unset($task);
+
+            $day['tasks'] = $tasks;
+            $day['hours'] = self::normalizeHour($totalHours);
+        }
+        unset($day);
+
+        return $value;
+    }
+
+    private static function sumDailyHours(array $dailyDetails): float
+    {
+        $total = 0.0;
+        foreach ($dailyDetails as $day) {
+            $total += self::normalizeHour($day['hours'] ?? 0);
+        }
+        return self::normalizeHour($total);
+    }
+
 
     /**
      * @notes 添加
@@ -54,13 +108,15 @@ class WeeklyReportLogic extends BaseLogic
                 throw new Exception("该周期周报已存在");
             }
 
+            $dailyDetails = self::normalizeDailyDetails($params['daily_details'] ?? []);
+
             $data = [
                 'user_id' => $params['user_id'],
                 'start_date' => $params['start_date'],
                 'end_date' => $params['end_date'],
-                'daily_details' => $params['daily_details'] ?? [],
-                'total_hours' => $params['total_hours'] ?? 0,
-                'overtime_hours' => $params['overtime_hours'] ?? 0,
+                'daily_details' => $dailyDetails,
+                'total_hours' => self::sumDailyHours($dailyDetails),
+                'overtime_hours' => self::normalizeHour($params['overtime_hours'] ?? 0),
                 'todo_items' => $params['todo_items'] ?? '',
                 'status' => 0,
                 'submit_time' => null,
@@ -112,12 +168,14 @@ class WeeklyReportLogic extends BaseLogic
                 throw new Exception("该周期周报已存在");
             }
 
+            $dailyDetails = self::normalizeDailyDetails($params['daily_details'] ?? []);
+
             $data = [
                 'start_date' => $params['start_date'],
                 'end_date' => $params['end_date'],
-                'daily_details' => $params['daily_details'] ?? [],
-                'total_hours' => $params['total_hours'] ?? 0,
-                'overtime_hours' => $params['overtime_hours'] ?? 0,
+                'daily_details' => $dailyDetails,
+                'total_hours' => self::sumDailyHours($dailyDetails),
+                'overtime_hours' => self::normalizeHour($params['overtime_hours'] ?? 0),
                 'todo_items' => $params['todo_items'] ?? '',
             ];
 
@@ -236,6 +294,7 @@ class WeeklyReportLogic extends BaseLogic
             SystemMsgLogic::add([
                 'content' => "周报被审核，审核结果：" . ($params['status'] == 1 ? "已审批" : "驳回"),
                 'user_id' => $WeeklyReport->user_id,
+                'admin_id' => $params['admin_id'] ?? 0,
             ]);
 
             Db::commit();

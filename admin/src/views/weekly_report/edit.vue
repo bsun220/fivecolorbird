@@ -131,6 +131,7 @@
                                             v-model="row.hours"
                                             :min="0"
                                             :step="0.5"
+                                            :precision="1"
                                             controls-position="right"
                                             class="!w-full"
                                             @change="syncReportHours"
@@ -200,11 +201,14 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-gray-600">本周加班工时合计</span>
-                            <el-input
-                                v-model.number="formData.overtime_hours"
-                                placeholder="请填写"
-                                style="width: 132px"
-                                type="number"
+                            <el-input-number
+                                v-model="formData.overtime_hours"
+                                :min="0"
+                                :step="0.5"
+                                :precision="1"
+                                controls-position="right"
+                                class="overtime-input"
+                                @change="handleOvertimeChange"
                             />
                         </div>
                     </div>
@@ -288,6 +292,29 @@ const getDayDate = (dayIndex: number) => {
 
 const getDayWeekday = (dayIndex: number) => {
     return getAutoWeekday(dayIndex) || formData.daily_details[dayIndex]?.weekday || ''
+}
+
+const isEmptyValue = (value: any) => value === '' || value === null || value === undefined
+
+const toFiniteNumber = (value: any, fallback = 0) => {
+    if (isEmptyValue(value)) {
+        return fallback
+    }
+    const number = Number(value)
+    return Number.isFinite(number) ? number : fallback
+}
+
+const normalizeHourValue = (value: any) => {
+    const hours = Math.max(toFiniteNumber(value, 0), 0)
+    return Number(hours.toFixed(1))
+}
+
+const hasValidHourValue = (value: any) => {
+    if (isEmptyValue(value)) {
+        return false
+    }
+    const hours = Number(value)
+    return Number.isFinite(hours) && hours >= 0
 }
 
 const syncDailyWeekdays = () => {
@@ -408,8 +435,7 @@ const removeDay = (dayIndex: number) => {
 
 const calcTaskHours = (tasks: any[]) => {
     return tasks.reduce((total, task) => {
-        const hours = Number(task.hours)
-        return total + (Number.isFinite(hours) ? hours : 0)
+        return total + normalizeHourValue(task.hours)
     }, 0)
 }
 
@@ -422,16 +448,21 @@ const reportTotalHours = computed(() => {
 })
 
 const formatHours = (value: number) => {
-    const hours = Number(value || 0)
-    return Number.isInteger(hours) ? `${hours}` : `${Number(hours.toFixed(2))}`
+    const hours = normalizeHourValue(value)
+    return Number.isInteger(hours) ? `${hours}` : `${Number(hours.toFixed(1))}`
+}
+
+const handleOvertimeChange = (value: number | undefined) => {
+    formData.overtime_hours = normalizeHourValue(value)
 }
 
 const syncReportHours = () => {
     syncDailyWeekdays()
     formData.daily_details.forEach(day => {
+        day.tasks = normalizeTasks(day.tasks)
         day.hours = getDayTotalHours(day)
     })
-    formData.total_hours = reportTotalHours.value
+    formData.total_hours = normalizeHourValue(reportTotalHours.value)
 }
 
 const validateDateDetailLimit = async () => {
@@ -450,6 +481,28 @@ const validateDateDetailLimit = async () => {
     return true
 }
 
+const validateHourFields = async () => {
+    for (let dayIndex = 0; dayIndex < formData.daily_details.length; dayIndex += 1) {
+        const day = formData.daily_details[dayIndex]
+        const tasks = Array.isArray(day.tasks) ? day.tasks : []
+        for (let taskIndex = 0; taskIndex < tasks.length; taskIndex += 1) {
+            const task = tasks[taskIndex]
+            if (!hasValidHourValue(task?.hours)) {
+                await feedback.msgWarning(`请填写第 ${dayIndex + 1} 天第 ${taskIndex + 1} 条工作事项的工时，0 也可以填写`)
+                return false
+            }
+        }
+    }
+
+    if (!isEmptyValue(formData.overtime_hours) && !hasValidHourValue(formData.overtime_hours)) {
+        await feedback.msgWarning('加班工时需为大于等于 0 的数字')
+        return false
+    }
+
+    formData.overtime_hours = normalizeHourValue(formData.overtime_hours)
+    return true
+}
+
 const parseJson = (value: any, fallback: any) => {
     if (!value) return fallback
     if (typeof value !== 'string') return value
@@ -464,7 +517,7 @@ const normalizeTasks = (tasks: any) => {
     const list = Array.isArray(tasks) && tasks.length ? tasks : [{ name: '', hours: 0, status: '' }]
     return list.map((task: any) => ({
         name: task?.name || '',
-        hours: Number(task?.hours || 0),
+        hours: normalizeHourValue(task?.hours),
         status: task?.status || ''
     }))
 }
@@ -476,7 +529,7 @@ const normalizeDailyDetails = (value: any) => {
     }
     return list.map((day: any) => ({
         weekday: day?.weekday || '',
-        hours: Number(day?.hours || 0),
+        hours: normalizeHourValue(day?.hours),
         tasks: normalizeTasks(day?.tasks)
     }))
 }
@@ -486,15 +539,22 @@ const normalizeTodoItems = (value: any) => {
     return Array.isArray(todo) ? todo.join('\n') : todo || ''
 }
 
-const buildParams = () => ({
-    id: formData.id,
-    start_date: formData.start_date,
-    end_date: formData.end_date,
-    daily_details: formData.daily_details,
-    total_hours: formData.total_hours,
-    overtime_hours: formData.overtime_hours || 0,
-    todo_items: formData.todo_items || ''
-})
+const buildParams = () => {
+    syncReportHours()
+    return {
+        id: formData.id,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        daily_details: formData.daily_details.map((day: any) => ({
+            ...day,
+            hours: normalizeHourValue(day.hours),
+            tasks: normalizeTasks(day.tasks)
+        })),
+        total_hours: normalizeHourValue(formData.total_hours),
+        overtime_hours: normalizeHourValue(formData.overtime_hours),
+        todo_items: formData.todo_items || ''
+    }
+}
 
 // 打开弹窗
 const open = (type = 'add') => {
@@ -526,7 +586,7 @@ const setFormData = async (data: Record<string, any>) => {
     dateRange.value = formData.start_date && formData.end_date ? [formData.start_date, formData.end_date] : []
     formData.daily_details = normalizeDailyDetails(detail.daily_details)
     syncReportHours()
-    formData.overtime_hours = Number(detail.overtime_hours || 0)
+    formData.overtime_hours = normalizeHourValue(detail.overtime_hours)
     formData.todo_items = normalizeTodoItems(detail.todo_items)
     formData.status = Number(detail.status || 0)
     formData.reply = detail.reply || ''
@@ -539,6 +599,9 @@ const handleSave = async () => {
         return
     }
     if (!(await validateDateDetailLimit())) {
+        return
+    }
+    if (!(await validateHourFields())) {
         return
     }
     syncReportHours()
@@ -566,6 +629,9 @@ const handleSubmit = async () => {
         return
     }
     if (!(await validateDateDetailLimit())) {
+        return
+    }
+    if (!(await validateHourFields())) {
         return
     }
     syncReportHours()
@@ -825,6 +891,10 @@ defineExpose({
 }
 
 .week-total-input {
+    width: 132px;
+}
+
+.overtime-input {
     width: 132px;
 }
 

@@ -59,11 +59,11 @@
           <div class="flex"><span class="text-gray-400 w-20">工号：</span><span>{{ userinfo.job_no }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">性别：</span><span>{{ userinfo.gender }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">手机号：</span><span>{{ userinfo.mobile }}</span></div>
-          <div class="flex"><span class="text-gray-400 w-20">证件类型：</span><span>{{ userinfo.id_type }}</span></div>
+          <div class="flex"><span class="text-gray-400 w-20">邮箱地址：</span><span>{{ userinfo.email }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">入职时间：</span><span>{{ userinfo.entry_date }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">任职岗位：</span><span>{{ userinfo.jobs_name }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">学历：</span><span>{{ userinfo.education }}</span></div>
-          <div class="flex"><span class="text-gray-400 w-20">邮箱地址：</span><span>{{ userinfo.email }}</span></div>
+          <div class="flex"><span class="text-gray-400 w-20">证件类型：</span><span>{{ userinfo.id_type }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">证件号：</span><span>{{ userinfo.id_number }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">在职状态：</span><span>{{ userinfo.status }}</span></div>
           <div class="flex"><span class="text-gray-400 w-20">所属部门：</span><span>{{ userinfo.dept_name }}</span></div>

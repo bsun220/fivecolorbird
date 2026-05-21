@@ -65,7 +65,7 @@ class PerformanceController extends BaseAdminController
                 'name'=>Admin::where(['id'=>$params['user_id']])->value('name'),
             ]);
 
-            SystemMsgLogic::add(['content'=>"添加绩效", 'user_id'=>$params['user_id']]);
+            SystemMsgLogic::add(['content'=>"添加绩效", 'user_id'=>$params['user_id'], 'admin_id'=>$this->adminId]);
             return $this->success('添加成功', [], 1, 1);
         }
         return $this->fail(PerformanceLogic::getError());
@@ -91,7 +91,7 @@ class PerformanceController extends BaseAdminController
                 'name'=>Admin::where(['id'=>$params['user_id']])->value('name'),
             ]);
 
-            SystemMsgLogic::add(['content'=>"绩效被编辑", 'user_id'=>$params['user_id']]);
+            SystemMsgLogic::add(['content'=>"绩效被编辑", 'user_id'=>$params['user_id'], 'admin_id'=>$this->adminId]);
             return $this->success('编辑成功', [], 1, 1);
         }
         return $this->fail(PerformanceLogic::getError());

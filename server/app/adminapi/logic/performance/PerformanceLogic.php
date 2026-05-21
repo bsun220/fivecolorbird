@@ -153,6 +153,7 @@ class PerformanceLogic extends BaseLogic
             SystemMsgLogic::add([
                 'content' => "您的绩效已评分",
                 'user_id' => $Performance->user_id,
+                'admin_id' => $params['admin_id'] ?? 0,
             ]);
 
             Db::commit();

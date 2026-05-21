@@ -57,7 +57,7 @@
                 <tbody>
                     <tr v-for="(task, taskIndex) in normalizedTasks(day.tasks)" :key="taskIndex">
                         <td>{{ task.name || '-' }}</td>
-                        <td>{{ task.hours ?? '-' }}</td>
+                        <td>{{ formatHourValue(task.hours) }}</td>
                         <td>{{ task.status || '-' }}</td>
                     </tr>
                 </tbody>
@@ -76,9 +76,9 @@
             <tbody>
                 <tr>
                     <td class="label-cell right-cell">本周合计工时</td>
-                    <td>{{ data.total_hours ?? '-' }}</td>
+                    <td>{{ formatHourValue(data.total_hours) }}</td>
                     <td class="label-cell right-cell">本周合计加班工时</td>
-                    <td>{{ data.overtime_hours ?? '-' }}</td>
+                    <td>{{ formatHourValue(data.overtime_hours) }}</td>
                 </tr>
                 <tr>
                     <td class="label-cell right-cell todo-label">待办事项</td>
@@ -187,16 +187,33 @@ const normalizedTasks = (tasks: any) => {
     return Array.isArray(tasks) && tasks.length ? tasks : [{ name: '', hours: '', status: '' }]
 }
 
+const isEmptyHourValue = (value: any) => value === null || value === undefined || value === ''
+
+const toHourNumber = (value: any) => {
+    if (isEmptyHourValue(value)) {
+        return null
+    }
+    const hours = Number(value)
+    return Number.isFinite(hours) ? hours : null
+}
+
+const formatHourValue = (value: any) => {
+    const hours = toHourNumber(value)
+    if (hours === null) {
+        return '-'
+    }
+    return Number.isInteger(hours) ? `${hours}` : `${Number(hours.toFixed(1))}`
+}
+
 const getDayHours = (day: any) => {
     const taskHours = normalizedTasks(day.tasks).reduce((total, task) => {
-        const hours = Number(task.hours)
-        return total + (Number.isFinite(hours) ? hours : 0)
+        return total + (toHourNumber(task.hours) ?? 0)
     }, 0)
-    const dayHours = Number(day.hours)
-    if (Number.isFinite(dayHours) && dayHours > 0) {
-        return dayHours
+    const dayHours = toHourNumber(day.hours)
+    if (dayHours !== null && dayHours > 0) {
+        return formatHourValue(dayHours)
     }
-    return taskHours || 0
+    return formatHourValue(taskHours)
 }
 </script>
 

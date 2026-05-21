@@ -52,6 +52,7 @@ class SystemMsgController extends BaseAdminController
     public function add()
     {
         $params = (new SystemMsgValidate())->post()->goCheck('add');
+        $params['admin_id'] = $this->adminId;
         $result = SystemMsgLogic::add($params);
         if (true === $result) {
             return $this->success('添加成功', [], 1, 1);

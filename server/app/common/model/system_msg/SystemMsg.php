@@ -40,5 +40,5 @@ class SystemMsg extends BaseModel
                 return 3;
         }
     }
-    
+
 }

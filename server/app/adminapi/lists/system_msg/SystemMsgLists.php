@@ -38,7 +38,7 @@ class SystemMsgLists extends BaseAdminDataLists implements ListsSearchInterface
     public function setSearch(): array
     {
         return [
-            
+            '=' => ['user_id'],
         ];
     }
 
@@ -54,7 +54,9 @@ class SystemMsgLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        return SystemMsg::where($this->searchWhere)
+        $where = $this->searchWhere;
+        $where[] = ['user_id', '=', $this->adminId];
+        return SystemMsg::where($where)
             ->field(['id', 'content', 'create_time'])
             ->append(['type'])
             ->limit($this->limitOffset, $this->limitLength)
@@ -72,7 +74,9 @@ class SystemMsgLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return SystemMsg::where($this->searchWhere)->count();
+        $where = $this->searchWhere;
+        $where[] = ['user_id', '=', $this->adminId];
+        return SystemMsg::where($where)->count();
     }
 
 }

@@ -21,6 +21,7 @@
                     <el-date-picker
                         v-model="queryParams.statistical_month"
                         type="month"
+                        format="YYYY年MM月"
                         value-format="YYYY-MM"
                         placeholder="选择统计月份">
                     </el-date-picker>
@@ -78,21 +79,21 @@
             <div class="mt-4">
                 <el-table :data="pager.lists" @selection-change="handleSelectionChange">
                     <el-table-column type="selection" width="55" />
-                    <el-table-column label="工号" prop="userInfo.number" show-overflow-tooltip />
-                    <el-table-column label="用户" prop="userInfo.name" show-overflow-tooltip />
-                    <el-table-column label="岗位" prop="userInfo.jobs_name" show-overflow-tooltip />
-                    <el-table-column label="部门" prop="userInfo.dept_name" show-overflow-tooltip />
-                    <el-table-column label="统计月份" prop="statistical_month" show-overflow-tooltip />
-                    <el-table-column label="工作评分" prop="work_score">
+                    <el-table-column label="工号" prop="userInfo.number" width="100" show-overflow-tooltip />
+                    <el-table-column label="用户" prop="userInfo.name" width="100" show-overflow-tooltip />
+                    <el-table-column label="岗位" prop="userInfo.jobs_name" width="110" show-overflow-tooltip />
+                    <el-table-column label="部门" prop="userInfo.dept_name" width="110" show-overflow-tooltip />
+                    <el-table-column label="统计月份" prop="statistical_month" width="110" :formatter="(_,__,v) => formatMonthText(v)" show-overflow-tooltip />
+                    <el-table-column label="工作评分" prop="work_score" width="80">
                         <template #default="{ row }">
                             <dict-value :options="dictData.work_score_type" :value="row.work_score" />
                         </template>
                     </el-table-column>
 
-                    <el-table-column label="绩效工资" prop="merit_pay" show-overflow-tooltip />
-                    <el-table-column width="150" label="发放日期" prop="issue_date" show-overflow-tooltip />
-                    <el-table-column width="150" label="累计绩效" prop="cumulative_merit_pay" show-overflow-tooltip />
-                    <el-table-column label="剩余加班工时" prop="remaining_overtime_hours" min-width="140" show-overflow-tooltip />
+                    <el-table-column label="绩效工资" prop="merit_pay" width="100" show-overflow-tooltip />
+                    <el-table-column label="发放日期" prop="issue_date" width="110" show-overflow-tooltip />
+                    <el-table-column label="累计绩效" prop="cumulative_merit_pay" width="100" show-overflow-tooltip />
+                    <el-table-column label="剩余加班工时" prop="remaining_overtime_hours" width="130" show-overflow-tooltip />
 
                     <!--
                     <el-table-column label="已发绩效奖金" prop="issued" show-overflow-tooltip />
@@ -163,7 +164,7 @@ import {onMounted} from "vue";
 import { usePaging } from '@/hooks/usePaging'
 import { useDictData } from '@/hooks/useDictOptions'
 import { apiPerformanceLists, apiPerformanceDelete } from '@/api/performance'
-import { timeFormat } from '@/utils/util'
+import { timeFormat, formatMonthText } from '@/utils/util'
 import feedback from '@/utils/feedback'
 import EditPopup from './edit.vue'
 import {adminAll} from "@/api/perms/admin";

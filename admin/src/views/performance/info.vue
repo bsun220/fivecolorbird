@@ -28,8 +28,6 @@
                     <tr>
                         <td class="label-cell">统计月份</td>
                         <td>{{ statMonth }}</td>
-                        <td class="blank-cell"></td>
-                        <td class="blank-cell"></td>
                     </tr>
                 </tbody>
             </table>
@@ -237,6 +235,7 @@ import type { PropType } from 'vue'
 import { computed, onMounted, reactive, ref, nextTick, shallowRef } from 'vue'
 import { apiPerformanceDetail, apiWeeklyReportList } from '@/api/performance'
 import WeeklyReportEditPopup from '@/views/admin_weekly_report/edit.vue'
+import { formatMonthText } from '@/utils/util'
 
 const props = defineProps({
     rowId: {
@@ -301,13 +300,6 @@ const formatHours = (value: any) => {
 const remainingOvertimeHours = computed(() => {
     return formatHours(formData.remaining_overtime_hours ?? 0)
 })
-
-const formatMonthText = (value: any) => {
-    const text = String(value || '')
-    const match = text.match(/^(\d{4})-(\d{1,2})/)
-    if (!match) return text || '-'
-    return `${match[1]}年${Number(match[2])}月`
-}
 
 const formatDateText = (value: any) => {
     const text = String(value || '')

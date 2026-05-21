@@ -113,6 +113,18 @@ export function objectToQuery(params: Record<string, any>): string {
 }
 
 /**
+ * @description 月份格式化 YYYY-MM → YYYY年MM月
+ * @param value { string } YYYY-MM 格式字符串
+ * @return { string }
+ */
+export const formatMonthText = (value: any) => {
+    const text = String(value || '')
+    const match = text.match(/^(\d{4})-(\d{1,2})/)
+    if (!match) return text || '-'
+    return `${match[1]}年${Number(match[2])}月`
+}
+
+/**
  * @description 时间格式化
  * @param dateTime { number } 时间戳
  * @param fmt { string } 时间格式

@@ -46,6 +46,7 @@ class SystemMsgLogic extends BaseLogic
             SystemMsg::create([
                 "content" => $params['content'],
                 "user_id" => $params['user_id'],
+                "admin_id" => $params['admin_id'] ?? 0,
             ]);
 
             Db::commit();

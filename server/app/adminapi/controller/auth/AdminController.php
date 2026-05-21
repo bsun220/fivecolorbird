@@ -62,7 +62,7 @@ class AdminController extends BaseAdminController
                 'title'=>"用户",
                 'name'=>"{$params['name']}",
             ]);
-            SystemMsgLogic::add(['content'=>"账户添加", 'user_id'=>$result['id']]);
+            SystemMsgLogic::add(['content'=>"账户添加", 'user_id'=>$result['id'], 'admin_id'=>$this->adminId]);
             return $this->success('操作成功', [], 1, 1);
         }
         return $this->fail(AdminLogic::getError());
@@ -87,7 +87,7 @@ class AdminController extends BaseAdminController
                 'title'=>"用户",
                 'name'=>"{$params['name']}",
             ]);
-            SystemMsgLogic::add(['content'=>"账户被编辑", 'user_id'=>$result['id']]);
+            SystemMsgLogic::add(['content'=>"账户被编辑", 'user_id'=>$result['id'], 'admin_id'=>$this->adminId]);
             return $this->success('操作成功', [], 1, 1);
         }
         return $this->fail(AdminLogic::getError());

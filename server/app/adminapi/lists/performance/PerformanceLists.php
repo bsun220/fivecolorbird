@@ -41,9 +41,30 @@ class PerformanceLists extends BaseAdminDataLists implements ListsSearchInterfac
     {
         return [
             '=' => ['user_id', 'work_score'],
-            'like' => ['statistical_month'],
-            'between' => ['statistical_month'],
         ];
+    }
+
+    private function normalizeMonthValues($value): array
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return [];
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{1,2})/', $value, $matches)) {
+            return [$value];
+        }
+
+        $year = $matches[1];
+        $month = (int)$matches[2];
+        if ($month < 1 || $month > 12) {
+            return [$value];
+        }
+
+        return array_values(array_unique([
+            $year . '-' . str_pad((string)$month, 2, '0', STR_PAD_LEFT),
+            $year . '-' . $month,
+        ]));
     }
 
     /**
@@ -65,8 +86,12 @@ class PerformanceLists extends BaseAdminDataLists implements ListsSearchInterfac
             $where[] = ['work_score', '=', $this->params['work_score']];
         }
 
-        if (!empty($this->params['month'])) {
-            $where[] = ['statistical_month', '=', $this->params['month']];
+        $statisticalMonth = $this->params['statistical_month'] ?? ($this->params['month'] ?? '');
+        $monthValues = $this->normalizeMonthValues($statisticalMonth);
+        if (!empty($monthValues)) {
+            $where[] = count($monthValues) === 1
+                ? ['statistical_month', '=', $monthValues[0]]
+                : ['statistical_month', 'in', $monthValues];
         }
 
         if (!empty($this->params['type']) && $this->params['type'] == 1) {

@@ -185,6 +185,7 @@
                                 v-model="formData.statistical_month"
                                 clearable
                                 type="month"
+                                format="YYYY年MM月"
                                 value-format="YYYY-MM"
                                 placeholder="选择统计月份"
                                 @change="handleWeeklyReport"

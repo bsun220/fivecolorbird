@@ -53,9 +53,17 @@
                         </template>
                     </el-table-column>
 
-                    <el-table-column label="总工时" prop="total_hours" show-overflow-tooltip />
+                    <el-table-column label="总工时" prop="total_hours" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ formatHoursDisplay(row.total_hours) }}
+                        </template>
+                    </el-table-column>
 
-                    <el-table-column label="加班工时" prop="overtime_hours" show-overflow-tooltip />
+                    <el-table-column label="加班工时" prop="overtime_hours" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ formatHoursDisplay(row.overtime_hours) }}
+                        </template>
+                    </el-table-column>
 
                     <el-table-column label="审核状态" prop="status">
                         <template #default="{ row }">
@@ -72,8 +80,17 @@
                     </el-table-column>
                     <el-table-column label="上传时间" prop="create_time" min-width="180" />
 
-                    <el-table-column label="操作" width="230" fixed="right">
+                    <el-table-column label="操作" width="280" fixed="right">
                         <template #default="{ row }">
+                            <el-button
+                                v-if="row.status == 1"
+                                v-perms="['weekly_report.weekly_report/view']"
+                                type="primary"
+                                link
+                                @click="handleInfo(row)"
+                            >
+                                查看
+                            </el-button>
                             <el-button
                                 v-if="(row.status == 0 && !row.submit_time) || row.status == 2"
                                 v-perms="['weekly_report.weekly_report/edit']"
@@ -201,6 +218,17 @@ const handleInfoDialogClosed = () => {
 const handleInfo = (row: any) => {
     currentRowId.value = row.id
     infoDialogVisible.value = true
+}
+
+const formatHoursDisplay = (value: any) => {
+    if (value === null || value === undefined || value === '') {
+        return '-'
+    }
+    const hours = Number(value)
+    if (!Number.isFinite(hours)) {
+        return '-'
+    }
+    return Number.isInteger(hours) ? `${hours}` : `${Number(hours.toFixed(1))}`
 }
 
 getLists()
