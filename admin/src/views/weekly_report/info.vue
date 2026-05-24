@@ -2,11 +2,11 @@
     <div v-loading="loading" class="report-info">
         <weekly-report-detail :data="formData" show-all-days>
             <template #after>
-                <div v-if="formData.status === 1 || formData.status === 2" class="section-title">
+                <div v-if="Number(formData.status) === 1 || Number(formData.status) === 2" class="section-title">
                     <span></span>
                     审批回复
                 </div>
-                <table v-if="formData.status === 1 || formData.status === 2" class="reply-table">
+                <table v-if="Number(formData.status) === 1 || Number(formData.status) === 2" class="reply-table">
                     <tbody>
                         <tr>
                             <td class="reply-label">审批回复</td>
@@ -29,6 +29,10 @@ const props = defineProps({
     rowId: {
         type: Number as PropType<number>,
         default: () => null
+    },
+    rowData: {
+        type: Object as PropType<Record<string, any> | null>,
+        default: () => null
     }
 })
 
@@ -47,6 +51,10 @@ const formData = reactive({
 })
 
 const loadDetail = async () => {
+    if (props.rowData) {
+        Object.assign(formData, props.rowData)
+        return
+    }
     if (!props.rowId) return
     loading.value = true
     try {

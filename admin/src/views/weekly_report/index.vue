@@ -6,9 +6,6 @@
                 :model="queryParams"
                 inline
             >
-                <el-form-item label="姓名" prop="name">
-                    <el-input v-model="queryParams.name" placeholder="请输入姓名" clearable />
-                </el-form-item>
                 <el-form-item label="日期范围" prop="date_range">
                     <daterange-picker
                         v-model:startTime="queryParams.start_date"
@@ -47,7 +44,7 @@
             </el-button>
             <div class="mt-4">
                 <el-table :data="pager.lists" @selection-change="handleSelectionChange">
-                    <el-table-column label="日期范围" min-width="180" show-overflow-tooltip>
+                    <el-table-column label="日期范围" min-width="220" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ row.start_date }} ~ {{ row.end_date }}
                         </template>
@@ -83,8 +80,6 @@
                     <el-table-column label="操作" width="280" fixed="right">
                         <template #default="{ row }">
                             <el-button
-                                v-if="row.status == 1"
-                                v-perms="['weekly_report.weekly_report/view']"
                                 type="primary"
                                 link
                                 @click="handleInfo(row)"
@@ -119,12 +114,13 @@
         </el-card>
         <edit-popup v-if="showEdit" ref="editRef" :dict-data="dictData" @success="getLists" @close="showEdit = false" />
 
-        <el-dialog
+        <el-drawer
             v-model="infoDialogVisible"
             title="查看"
-            width="720px"
+            size="920px"
+            direction="rtl"
             :destroy-on-close="true"
-            custom-class="report-preview-dialog"
+            custom-class="weekly-report-drawer"
             @closed="handleInfoDialogClosed"
         >
             <info-popup
@@ -132,11 +128,12 @@
                 ref="infoRef"
                 :dict-data="dictData"
                 :row-id = "currentRowId"
+                :row-data="currentRowData"
             />
             <template #footer>
-                <el-button type="primary" class="dialog-close-btn" @click="infoDialogVisible = false">关闭</el-button>
+                <el-button type="primary" class="drawer-close-btn" @click="infoDialogVisible = false">关闭</el-button>
             </template>
-        </el-dialog>
+        </el-drawer>
 
     </div>
 </template>
@@ -158,13 +155,13 @@ const infoRef = shallowRef<InstanceType<typeof InfoPopup>>()
 // 是否显示编辑框
 const showEdit = ref(false)
 
-// 详情弹窗
+// 详情抽屉
 const infoDialogVisible = ref(false)
 const currentRowId = ref<any>(null)
+const currentRowData = ref<Record<string, any> | null>(null)
 
 // 查询条件
 const queryParams = reactive({
-    name: '',
     start_date: '',
     end_date: '',
     status: '',
@@ -210,13 +207,15 @@ const handleDelete = async (id: number | any[]) => {
     await getLists()
 }
 
-// 弹窗相关
+// 抽屉相关
 const handleInfoDialogClosed = () => {
     currentRowId.value = null
+    currentRowData.value = null
 }
 
 const handleInfo = (row: any) => {
     currentRowId.value = row.id
+    currentRowData.value = row
     infoDialogVisible.value = true
 }
 
@@ -242,22 +241,31 @@ getLists()
 :deep(.status-select .el-input__wrapper) {
     min-height: 32px;
 }
-:global(.report-preview-dialog .el-dialog__body) {
-    max-height: 72vh;
-    overflow-y: auto;
-    padding: 8px 24px 10px;
+:global(.weekly-report-drawer) {
+    width: 920px !important;
+    max-width: 96vw;
 }
 
-:global(.report-preview-dialog .el-dialog__header) {
+:global(.weekly-report-drawer .el-drawer__header) {
+    margin-bottom: 0;
     padding: 26px 24px 16px;
+    color: #333;
 }
 
-:global(.report-preview-dialog .el-dialog__title) {
+:global(.weekly-report-drawer .el-drawer__title) {
     font-size: 20px;
     font-weight: 600;
 }
 
-.dialog-close-btn {
+:global(.weekly-report-drawer .el-drawer__body) {
+    padding: 8px 24px 10px;
+}
+
+:global(.weekly-report-drawer .el-drawer__footer) {
+    padding: 16px 24px 32px;
+}
+
+.drawer-close-btn {
     min-width: 104px;
     height: 42px;
 }

@@ -83,10 +83,15 @@ class WeeklyReportLists extends BaseAdminDataLists implements ListsSearchInterfa
      */
     public function lists(): array
     {
+        $fields = ['id', 'start_date', 'end_date', 'total_hours', 'overtime_hours', 'status', 'reply', 'submit_time', 'examine_time', 'create_time', 'user_id'];
+        if (!empty($this->params['type']) && $this->params['type'] == 1) {
+            $fields[] = 'daily_details';
+            $fields[] = 'todo_items';
+        }
 
         $query = WeeklyReport::where($this->searchWhere)
             ->where($this->queryWhere())
-            ->field(['id', 'start_date', 'end_date', 'total_hours', 'overtime_hours', 'status', 'reply', 'submit_time', 'examine_time', 'create_time', 'user_id']);
+            ->field($fields);
 
         if (empty($this->params['type']) || $this->params['type'] != 1) {
             $query->whereNotNull('submit_time');
