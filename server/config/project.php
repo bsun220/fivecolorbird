@@ -64,12 +64,12 @@ return [
         'menu_web' => 'resource/image/adminapi/default/menu_web.png',// 首页快捷菜单-网站信息
         'menu_file' => 'resource/image/adminapi/default/menu_file.png',// 首页快捷菜单-素材中心
 
-        'sczb' => 'resource/image/adminapi/default/1.png',// 首页快捷菜单-素材中心
-        'ckjx' => 'resource/image/adminapi/default/2.png',// 首页快捷菜单-素材中心
-        'grzx' => 'resource/image/adminapi/default/3.png',// 首页快捷菜单-素材中心
-        'xzbd' => 'resource/image/adminapi/default/4.png',// 首页快捷菜单-素材中心
-        'zbsh' => 'resource/image/adminapi/default/5.png',// 首页快捷菜单-素材中心
-        'xzry' => 'resource/image/adminapi/default/6.png',// 首页快捷菜单-素材中心
+        'sczb' => 'resource/image/adminapi/default/sczb.png',// 首页快捷菜单-素材中心
+        'ckjx' => 'resource/image/adminapi/default/ckjx.png',// 首页快捷菜单-素材中心
+        'grzx' => 'resource/image/adminapi/default/grzx.png',// 首页快捷菜单-素材中心
+        'xzbd' => 'resource/image/adminapi/default/xzbd.png',// 首页快捷菜单-素材中心
+        'zbsh' => 'resource/image/adminapi/default/zbsh.png',// 首页快捷菜单-素材中心
+        'xzry' => 'resource/image/adminapi/default/xzry.png',// 首页快捷菜单-素材中心
     ],
 
     // 文件上传限制 (图片)

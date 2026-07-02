@@ -63,7 +63,7 @@ class WorkbenchLogic extends BaseLogic
     {
         return [
             [
-                'name' => '上传周报',
+                'name' => '填写周报',
                 'image' => FileService::getFileUrl(config('project.default_image.sczb')),
                 'url' => '/work/weekly_report'
             ],
